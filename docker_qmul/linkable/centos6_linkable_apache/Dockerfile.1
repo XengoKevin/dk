@@ -1,0 +1,19 @@
+# Dockerfile to create a linkable Apache + PHP container image.
+#
+# Log 20151120: kevina: v1.0 Initial version created.
+#
+
+# Start with our Centos 6 base image.
+FROM qmul/centos6_base:v1.0
+MAINTAINER Kevin Austin <k.austin@qmul.ac.uk>
+LABEL description="Linkable container image running apache."
+
+# Copy and run the setup script
+ADD centos6_apache_setup.sh /root/setup.sh
+RUN chmod +x /root/setup.sh && /root/setup.sh && rm -f /root/setup.sh
+
+# Expose the Apache port to the docker engine
+EXPOSE 80
+
+# Run the Apache binary
+CMD ["/usr/sbin/apachectl", "-D", "FOREGROUND"]

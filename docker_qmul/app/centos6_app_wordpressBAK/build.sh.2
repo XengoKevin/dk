@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+#~# QMUL CentOS 6 Wordpress Application LAMP container image
+#
+# Log:
+# 2015-11-20 Ian T Price <i.price@qmul.ac.uk>: v1.0 Created
+
+VER="v1.0"
+INAME="qmul/centos6_app_wordpress"
+
+#~# Building with image name qmul/centos6_app_wordpress:v1.0
+echo -e "\n\n*** Building ${INAME} container image - version ${VER} ***\n\n"
+
+#~# Tag image name qmul/centos6_app_wordpress:latest
+# $1 allows us to add --no-cache to the build if required
+docker build --rm $1 -t ${INAME}:${VER} . \
+  && docker tag -f ${INAME}:${VER} ${INAME}:latest

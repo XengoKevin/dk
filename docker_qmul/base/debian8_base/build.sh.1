@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#~# QMUL Debian 8 Base image
+#~# Script to build a Debian 8 base image from offical latest image
+#~# TODO: Convert images & scripts to QMUL standard images
+#
+# 2015-11-20 I.Price@qmul.ac.uk: v1.0 Created
+
+CURDIR=$(pwd); clear; echo $CURDIR; echo
+TAG="qmul/"${CURDIR##*/}; echo; echo $TAG; echo
+
+docker build --rm -t ${TAG} .
+
+docker ps -a
+
+

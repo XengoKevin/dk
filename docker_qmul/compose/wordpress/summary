@@ -1,0 +1,13 @@
+Instance Name: wp
+FQDN: wp.qmul.ac.uk
+Brief Description: test
+Docker Image: qmul/centos6_app_lamp
+Docker Container ID: ffc646e8c998ad7c47e78a12ef8b4d2af19045864d9be66eb58bc2db9d839a23
+Docker IP Address (Internal): 172.17.0.2
+IP Address (External): 161.23.44.76
+Docker Ports: map[80/tcp:[{0.0.0.0 32859}] 22/tcp:[{0.0.0.0 32860}] 3306/tcp:[{0.0.0.0 32858}]]
+Built by: itp <itp@iti.com> (sudo user: NOT SET, sudo ID: NOT SET)
+Manager: itp
+Build time: Thu 17 Dec 09:59:39 GMT 2015
+MySQL Root User: root
+MySQL Root Password: IkxT2Q8pxsPM

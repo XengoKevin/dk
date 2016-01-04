@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# 2015-11-25 I.Price@qmul.ac.ul: Original
+
+# 'auto' document files by adding comments with the #~#
+# This script egreps the files for #+# to provide a document summary
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+# Assume pwd unless told otherwise
+if [ $1 ]
+    then
+        DIR="$(pwd)/$1"
+    else
+        DIR="$(pwd)" 
+fi
+
+clear
+
+echo -e "\n${bold}### Documenting ${DIR} ###${normal}" 
+
+# Only search regular files 
+# and exclude old version files ( filename.1, filename.2, etc)
+for FILE in $( find ${DIR} -type f \( ! -iname "*.[0-9]" \) | sort)
+   do
+        echo -e "\n\n${bold}*** Docs: ${FILE} ***${normal}\n"
+        # replace #~# with plain # and remove leading whitespace.
+        egrep "#~#" ${FILE} | sed 's/#~#/#/g' | sed 's/^[ \t]*//'
+   done
+
+echo -e "\n${bold}*** Documentation complete ***${normal}\n"
+
+

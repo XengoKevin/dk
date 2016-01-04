@@ -1,0 +1,21 @@
+lnk_wp:
+  image: wordpress
+  links:
+   - lnk_db
+  ports:
+   - "8787:80"
+  environment:
+   - WORDPRESS_DB_HOST=lnk_db
+   - WORDPRESS_DB_NAME=wordpress
+   - WORDPRESS_DB_USER=wordpress
+   - WORDPRESS_DB_PASSWORD=wordpresspwd
+lnk_db:
+  image: mysql
+  volumes_from:
+   - itp_lnk_vol
+  environment:
+   - MYSQL_ROOT_PASSWORD=wpdocker
+   - MYSQL_DATABASE=wordpress
+   - MYSQL_USER=wordpress
+   - MYSQL_PASSWORD=wordpresspwd
+

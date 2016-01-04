@@ -1,0 +1,26 @@
+#~# Read Me file for the DOCDOC (DOCument DOCker) system of documenting docker files
+#~# TODO: Add --help option to docdoc.sh to cat this file to screen
+
+# The  docdoc.sh  bash script provides high level documentation for files stored in /etc/docker_qmul/*
+
+# The script is currently to be found at  dev-centos7-doc-01:/usr/local/bin/docdoc.sh
+
+# There is a soft link to  docdoc  for convenience
+
+
+# The script searches all regular files for a comment tag  #~#  using the linux find command
+
+# Regular comments can still be added to files but the will not get reported by DOCDOC
+
+
+# The starting point is always the Present Working Directory (PWD) and will always recurse lower directories
+
+# No path is required (assumes PWD) but if it is provided, it must be relative to the current directory
+
+
+# Usage:
+
+# docdoc                                    - lists the #~# comments from all files in the current and lower directories 
+
+# /etc/docker_qmul/includes/docdoc ../base  - lists the #~# comments from all files in the /etc/docker_qmul/base and lower directories 
+

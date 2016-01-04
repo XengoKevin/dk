@@ -1,0 +1,53 @@
+#~# Dockerfile to create a Centos 6 LAMP image
+#
+# 2015-11-18 Ian T Price <I.Price@qmul.ac.uk> : Orignal file
+# 2015-11-20 Ian T Price <I.Price@qmul.ac.uk> : Added MySQL yum and set-up & removed start-up for httpd
+
+#~# Based on Centos 6 base image qmul/centos6_base:v1.0
+FROM qmul/centos6_base:v1.0
+MAINTAINER Ian T Price <I.Price@qmul.ac.uk>
+
+#~# Run yum update and install
+#~# - httpd mod_extract_forwarded mysql mysql-server 
+#~# - php php-cli php-common php-mysql php-pear
+
+RUN yum install -y        \
+  httpd                   \
+  mod_extract_forwarded   \
+  mysql                   \
+  mysql-server            \
+  php                     \
+  php-cli                 \
+  php-common              \
+  php-mysql               \
+  php-pear                \
+  ; yum clean all
+
+#~# Setup the Apache httpd
+
+#~# Add check files phpinfo.php & index.html
+ADD phpinfo.php /var/www/html/phpinfo.php
+RUN echo "Apache HTTPD by Docker" >> /var/www/html/index.html
+
+#~# Add mod_extract_forwarded.conf to /etc/httpd/conf.d
+#RUN mkdir -p /etc/httpd/conf.d
+ADD mod_extract_forwarded.conf /etc/httpd/conf.d/mod_extract_forwarded.conf
+
+#~# Copy and run the Apache setup script to /root/setup.sh; rm if successful
+ADD centos6_apache_setup.sh /root/setup.sh
+RUN chmod +x /root/setup.sh && /root/setup.sh && rm -f /root/setup.sh
+
+#~# Copy and run the MySQL setup script to /root/setup.sh; rm if successful
+ADD centos6_mysql_setup.sh /root/setup.sh
+RUN chmod +x /root/setup.sh && /root/setup.sh && rm -f /root/setup.sh
+
+#~# Expose port 80 to the docker engine - depreciated; removed
+# EXPOSE 80
+
+#~# Copy simple startup script to avoid issues with old PIDs
+ADD run-httpd.sh /root/run-httpd.sh
+RUN chmod -v +x /root/run-httpd.sh
+# CMD ["/run-httpd.sh"]
+
+#~# Run apache in the foreground - no daemon
+CMD ["/usr/sbin/apachectl", "-D", "FOREGROUND"]

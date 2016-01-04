@@ -1,0 +1,11 @@
+#~# File containing the Version No. of the build
+
+# Add the version no. of the build on it's own line
+# Use a lower case 'v'
+
+# Add the version number in the format  'vn.n'
+# where n.n is the major and minor version numbers
+# E.G. v1.6
+
+v1.2
+

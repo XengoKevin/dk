@@ -1,0 +1,36 @@
+#!/bin/bash
+
+R_PORT__MYSQL=3307
+R_PORT_SSH=2200
+R_PORT_HTTP=8000
+
+INAME="centos6_apache"
+CNAME="chk_apache"
+# VER=":V1.0"
+# This assumes 'latest' image exists until we have a VCS
+VER=""
+
+# Stop old container
+if [[ $(docker ps -f name="${CNAME}" --format "{{.ID}}") ]] ; 
+    then 
+        echo -e "\n*** Stopping old ${CNAME} ***\n"
+        docker stop $(docker ps -f name="${CNAME}" --format "{{.ID}}") ; 
+    else 
+        echo "No container to stop" ; 
+fi
+
+# Remove old container
+# TODO : Need to ask user if they really mean this
+if [[ $(docker ps -a -f name="${CNAME}" --format "{{.ID}}") ]] ; 
+    then 
+        echo -e "\n*** Removing old ${CNAME} ***\n"
+        docker rm $(docker ps -a -f name="${CNAME}" --format "{{.ID}}") ; 
+    else 
+        echo "No container to remove" ; 
+fi
+
+# Spin up the new container
+#docker run -d -p $R_PORT_HTTP:80 -p $R_PORT_SSH:22 -p $R_PORT_MYSQL:3306 --name=${CNAME} --hostname=${CNAME}  qmul/${INAME}
+# This method allows Docker to allocate ports automatically
+docker run -d -p 80 -p 22 -p 3306 --name=${CNAME} --hostname=${CNAME}  qmul/${INAME}${VER}
+

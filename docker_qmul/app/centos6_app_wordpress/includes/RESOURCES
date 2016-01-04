@@ -1,0 +1,8 @@
+cpu_period
+cpu_quota
+memory
+memory_swap
+ulimit_nproc
+ulimit_core
+ulimit_nofile
+blockio

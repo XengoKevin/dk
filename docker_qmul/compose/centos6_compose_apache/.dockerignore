@@ -1,0 +1,8 @@
+#~# Use this file to exclude files from the docker image build
+#
+# NOTE each directory has to be specifically excluded - docker does not recurse
+
+build.sh*
+Dockerfile.*
+
+

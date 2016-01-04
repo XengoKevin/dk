@@ -1,0 +1,47 @@
+lnk_wp:
+#  image: wordpress
+  build: /etc/docker_qmul/compose/wordpress
+  hostname: lnk_wp
+  domainname: qmul.ac.uk
+  mem_limit: 256m
+  memswap_limit: 384m
+  ulimits:
+    nproc: 1024
+    nofile: 1024
+    core: 0
+#  Not supported by Compose yet.
+#  cpu-period: 50000
+#  cpu-quota: 25000
+#  blkio-weight: 500
+  restart: unless-stopped
+  extra_hosts:
+   - "lnk_wp:161.23.44.67"
+   - "lnk_wp.qmul.ac.uk:161.23.44.67"
+  links:
+   - lnk_db
+  ports:
+   - "8787:80"
+  environment:
+   - WORDPRESS_DB_HOST=lnk_db
+   - WORDPRESS_DB_NAME=wordpress
+   - WORDPRESS_DB_USER=wordpress
+   - WORDPRESS_DB_PASSWORD=wordpresspwd
+lnk_db:
+  image: mysql
+  hostname: lnk_db
+  domainname: qmul.ac.uk
+  mem_limit: 256m
+  memswap_limit: 384m
+  ulimits:
+    nproc: 1024
+    nofile: 1024
+    core: 0
+  restart: unless-stopped
+  volumes_from:
+   - lnk_vol
+  environment:
+   - MYSQL_ROOT_PASSWORD=wpdocker
+   - MYSQL_DATABASE=wordpress
+   - MYSQL_USER=wordpress
+   - MYSQL_PASSWORD=wordpresspwd
+

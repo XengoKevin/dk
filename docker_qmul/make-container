@@ -1,0 +1,248 @@
+#!/bin/bash -e
+#-# QMUL Container Deployment Script.
+#
+# Log:
+# 2015-11-27 kevina: v.1.0 Created
+# 2015-12-04 kevina: v.1.01 Added helpdesk ID, e-mail address, sudo name / ID (if set), and a list of existing containers when duplicate name is selected.
+# 2015-12-07 kevina: v.1.02 Added runtime constraints depending upon which image is selected.  Also setting TERM to use xterm, and logging to /var/log/docker_audit.log.
+# 2015-12-14 kevina: v.1.03 Hostname is now set on a container to be the same as the short name.  Initial Puppet configuration working.
+# 2015-12-15 kevina: v.1.04 Docker containers are being started without networking options.  IP allocation introduced (MySQL DB qmul/ipam).
+# 2015-12-16 kevina: v.1.05 Using dialog instead of whiptail (more options available).  Puppet join finished.
+# 2015-12-18 kevina: v.1.06 Better error checking implemented.  Ensure IP allocated to a container isn't actually being used by something else.
+# 2016-01-11 kevina: v.1.07 The main thrust of the script is now separated with 'post-run.sh' based in each app's directory.  Ensured this can only be run by root user.
+
+#~# This script can only be run by root because of some of the dependencies it uses below.
+if [ "$EUID" -ne 0 ]
+	then echo "Please run as root."
+	exit
+fi
+
+# This script makes use of dialog (available on all distros), the configurable options are available on the next few lines:
+wt="Queen Mary University London Docker Deployer" # dialog title
+wh=24 # dialog height
+wl=80 # dialog length
+bt=""
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+# Starting script.
+clear
+
+# Find an available IP address and reserve it for the remainder of this process.  It's allocated at the end of the script.
+ip_address_allocated=$(mysql -u root -ss -e "SELECT ip_address FROM qmul.ipam WHERE status = 0 LIMIT 1")
+ip_length=$(echo ${#ip_address_allocated})
+
+if [ $ip_length -lt 1 ]
+	then
+		echo "No IP addresses available.  Exiting." # At this point we really need to inform somebody that there are no available IP addresses and do something.
+		exit
+
+	else
+	# Put a virtual lock on the allocated IP address by giving it a status of 2.
+	mysql -u root  -ss -e "UPDATE qmul.ipam SET status = 2 WHERE ip_address = \"$ip_address_allocated\""
+fi
+
+# The first dialog screen introducing this script is displayed here.
+dialog --title "$wt" --backtitle "$bt" --msgbox "\nYou can create a new docker instance from here, and the process should take less than five minutes to complete.\n\nSelect <OK> to continue." $wh $wl
+
+# All of the functions this script relies on begin here.  Starting with getting the container / short name.
+function instance_name_validate {
+	instance_name=$(dialog --title "$wt" --backtitle "$bt_instance" --inputbox "\nWhat would you like to name this instance? (short name e.g. library)" $wh $wl 3>&1 1>&2 2>&3)
+
+	# Ensure the short name is composed of alphanumeric and hyphen characters only.
+	if echo $instance_name | grep -q '[^0-9a-zA-Z_\.\-]'
+		then
+			bt_instance="Sorry, only alphanumeric and hyphen characters are allowed to name an instance.  Please try again." && unset instance_name && instance_name_validate
+		fi
+
+	# This is a required field.  Ensure that the name is greater than 0 characters in length.
+	in_length=$(echo ${#instance_name})
+	if [ $in_length -lt 1 ]
+		then
+			bt_instance="Sorry, the instance name needs to be set.  Please try again."  && unset instance_name && unset in_length && instance_name_validate
+		fi
+
+	# Check that the instance name isn't presently in use.  Otherwise let the user know.
+	existing_instance_check=$(docker ps -a | grep $instance_name$ | wc -l)
+
+	 if [ $existing_instance_check -eq 1 ]
+                then
+		if (dialog --title "$wt" --yes-label "Retry" --no-label "View" --yesno "\nSorry, $instance_name is already in use.\n\nPlease try selecting a new name by selecting <Retry>, or you can view existing containers by selecting <View>." $wh $wl)
+			then
+				instance_name_validate
+			else
+				# Get existing containers, and present them to the user.  Sort by container name.
+				docker inspect --format=' {{.Name}} {{.Config.Image}} {{.State.Status}}' $(sudo docker ps -aq --no-trunc) | sort -d | cut -c 3-100 > existing_containers
+				docker_containers=$(column -t existing_containers)
+				rm -f existing_containers # Tidy up.
+
+				dialog --scrollbar --title "$wt" --ok-label "Search again" --msgbox "$docker_containers" $wh $wl
+				instance_name_validate
+		fi
+        fi
+}
+
+# Get the fully-qualified domain name.
+function fqdn_validate {
+	fqdn=$(dialog --title "$wt" --backtitle "$bt_fqdn" --inputbox "\nWhat is the fully qualified domain name for this instance?\n(e.g. wwtn.history.qmul.ac.uk)" $wh $wl 3>&1 1>&2 2>&3)
+
+	# Ensure the FQDN is composed of alphanumeric, hyphen and dot characters only.
+	if echo $fqdn | grep -q '[^0-9a-zA-Z_\.\-]'
+		then
+			bt_fqdn="Sorry, only alphanumeric, dot and hyphen characters are allowed for the FQDN.  Please try again." && unset fqdn && fqdn_validate
+		fi
+
+	# This is a required field.  Ensure that the name is greater than 0 characters in length.
+	fqdn_length=$(echo ${#fqdn})
+	if [ $fqdn_length -lt 1 ]
+		then
+			bt_fqdn="Sorry, the FQDN (Fully Qualified Domain Name) name needs to be set.  Please try again."  && unset fqdn && unset fqdn_length && fqdn_validate
+	fi
+}
+
+# Who's setting up this container?
+function creator_validate {
+	creator=$(dialog --title "$wt" --backtitle "$bt_creator" --inputbox "\nWhat is your name?  This is asked in case we need to contact you in regards to this container." $wh $wl 3>&1 1>&2 2>&3)
+
+	# Ensure the name is composed of letters, spaces and hyphens only.
+	if echo $creator | grep -q '[^a-zA-Z :\-]'
+		then
+			bt_creator="Sorry, only letters, spaces and hyphens are allowed.  Please try again." && unset creator && creator_validate
+		fi
+
+	# This is a required field.  Ensure that the name is greater than 0 characters in length.
+	creator_length=$(echo ${#creator})
+	if [ $creator_length -lt 1 ]
+		then
+			bt_creator="Sorry, your name needs to be set.  Please try again." && unset creator && unset creator_length && creator_validate
+	fi
+}
+
+# Grab the e-mmail address of the creator.
+function email_validate {
+	email=$(dialog --title "$wt" --backtitle "$bt_email" --inputbox "\nWhat is your e-mail address?" $wh $wl "$email" 3>&1 1>&2 2>&3)
+
+	# Quick and dirty regex to check e-mail address which also doubles to ensure something it typed in.
+	[[ "$email" != ?*@?*.?* ]] && bt_email="Please entry a valid e-mail address." && email_validate || echo ""
+}
+
+# Who is responsible for the container?
+function manager_validate {
+	manager=$(dialog --title "$wt" --backtitle "$bt_manager" --inputbox "\nWho is responsible for this container? (This is usually a managers name)" $wh $wl 3>&1 1>&2 2>&3)
+
+	# Ensure the manager's name is composed of alphanumeric and hyphen characters only.
+	if echo $manager | grep -q '[^0-9a-zA-Z_ :\-]'
+		then
+			bt_manager="Sorry, only letters, spaces and hyphens are allowed.  Please try again." && unset creator && manager_validate
+		fi
+
+	# This is a required field.  Ensure that the manager's name is greater than 0 characters in length.
+	manager_length=$(echo ${#manager})
+	if [ $manager_length -lt 1 ]
+		then
+			bt_manager="Sorry, the person responsible for this container needs to be named.  Please try again."  && unset manager && unset manager_length && manager_validate
+	fi
+}
+
+# If there was a helpdesk request, capture the reference here.
+function helpdesk_capture {
+	# If there's a helpdesk request ticket in relation to this container, capture it now.  Not mandatory.
+	helpdesk=$(dialog --title "$wt" --backtitle "$bt_helpdesk" --inputbox "\nIf you have a helpdesk request ID, please enter it here." $wh $wl 3>&1 1>&2 2>&3)
+}
+
+# Ask for a description of how this container is to be used.
+function description_validate {
+	description=$(dialog --title "$wt" --backtitle "$bt_desc" --inputbox "\nPlease provide a brief description of what this container will be used for." $wh $wl 3>&1 1>&2 2>&3)
+
+	# This is a required field.  Ensure that the description text is greater than 0 characters in length.
+	description_length=$(echo ${#description})
+	if [ $description_length -lt 1 ]
+		then
+			bt_desc="Sorry, a brief description is required to create this container." && unset description && unset description_manager && description_validate
+	fi
+}
+
+# Select the image to use for running the container.
+function docker_image_select {
+	container_type=$(cat container_type)
+
+	# If the container type is migration, use the default CentOS 6 LAMP image.
+	if [ $container_type == "Migration" ]
+		then
+		selected_image="qmul/centos6_app_lamp"
+		run_summary
+		exit
+	fi
+
+	# Create a temporary file with the Docker images ready for processing.  Need this custom format for dialog.
+	#docker images | grep "latest" | grep "qmul/" | grep "_app_" awk '!/^ / && NF {print $1}{print ""}{print "Off"}' > docker_images
+	docker images | grep "latest" | egrep "(_linkable_|_app_)" | awk '!/^ / && NF {print $1}{print ""}{print "Off"}' > docker_images
+	docker_image_array=($(<docker_images))
+
+	selected_image=$(dialog --title "Select Image" --backtitle "$bt_image" --no-items --radiolist "\nWhich image would you like to use for your container?\n\n(Use UP/DOWN arrows to scroll, <Space> to select an image and <Return> to confirm your choice.)" $wh $wl 20 "${docker_image_array[@]}" 3>&1 1>&2 2>&3)
+
+	# This is a required field.  Ensure that an image has been selected.
+        selected_image_length=$(echo ${#selected_image})
+        if [ $selected_image_length -lt 1 ]
+		then
+			bt_image="Please select an image for your application." && unset selected_image && unset selected_image_length && docker_image_select
+	fi
+}
+
+function container_type_select {
+	if (dialog --title "$wt" --backtitle "$bt_type" --yes-label "New" --no-label "Migration" --yesno "\nWill this container be used for a new application or as part of a migration project?\n\n\
+New: This will allow you to create an instance from QMUL's image library.  These include WordPress, Drupal, Joomla and also a standard LAMP install.\n\n
+Migration: If you are migrating existing data, we'll set up the database and create a root user for you using the base QM CentOS 6 LAMP image.  You can then copy your data over to the new container using SCP or other secure tool." $wh $wl)
+	# Writing the container type to a temporary file because of the way yesno boxes are constructed in dialog.
+	then
+		echo "New" > container_type
+	else
+		echo "Migration" > container_type
+	fi
+}
+
+function run_summary {
+	container_type=$(cat container_type)
+	# Tidying up
+	rm -f container_type
+	rm -f docker_images
+
+	if (dialog --title "$wt" --yes-label "Build" --no-label "Cancel"  --yesno "\nPlease review your new container information.\n\n\
+To build your container please click <Build>, otherwise click <Cancel> to abandon this process.\n\n\
+Instance Name: $instance_name\n\
+FQDN:          $fqdn\n\
+Your Name:     $creator\n\
+Manager Name:  $manager\n\
+Docker Image:  $selected_image\n\
+Type:          $container_type\n\
+Helpdesk Ref:  $helpdesk" $wh $wl)
+		then
+			#docker_build
+			docker_run
+		else
+			# So close, but yet so far...
+			clear
+			exit
+	fi
+}
+
+function docker_run {
+	cd "/etc/docker_qmul/app/${selected_image##*/}"
+	hname=`echo $instance_name".server.qmul.ac.uk" | awk '{print tolower($0)}'`
+	source "/etc/docker_qmul/app/${selected_image##*/}/run.sh" --quiet --cname $instance_name --hname $hname > docker_id
+	sleep 1
+	source "/etc/docker_qmul/app/${selected_image##*/}/post-run.sh"
+}
+
+# Run the functions now.
+instance_name_validate
+fqdn_validate
+creator_validate
+email_validate
+manager_validate
+helpdesk_capture
+description_validate
+container_type_select
+docker_image_select
+run_summary

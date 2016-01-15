@@ -1,8 +1,8 @@
-cpu_period
-cpu_quota
-memory
-memory_swap
-ulimit_nproc
-ulimit_core
-ulimit_nofile
-blockio
+--memory=256M
+--memory-swap=384M
+--cpu-period=50000
+--cpu-quota=25000
+--blkio-weight=500
+--ulimit nproc=1024
+--ulimit core=0
+--ulimit nofile=1024

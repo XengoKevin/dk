@@ -43,3 +43,5 @@ con_build_ins ${INAME} ${VER} ${CNAME}
 #~# Publish additonal usage instructions
 con_use_ins
 
+#~# Tidy up
+rm -f centos6_app_drupal_setup.sh

@@ -1,3 +1,0 @@
-TERM=xterm
-additional_hosts (puppet:10.16.240.104)
-restart_policy

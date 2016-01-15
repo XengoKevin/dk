@@ -13,9 +13,6 @@ LABEL description="This is an MySQL application monolithic container."
 ADD centos6_mysql_setup.sh /root/centos6_mysql_setup.sh
 RUN chmod +x /root/centos6_mysql_setup.sh && /root/centos6_mysql_setup.sh && rm -f /root/centos6_mysql_setup.sh
 
-# Expose the MySQL port to the docker engine
-EXPOSE 3306
-
 #~# Detail what the container should include to motd
 RUN echo -e "\n[ Includes CentOS-6.7 / MySQL 5.x ]\n" >> /etc/motd
 

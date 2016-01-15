@@ -2,7 +2,6 @@
 #
 # 2015-11-20: kevina: v1.0 Initial version created.
 
-
 #~# Based on Centos 6 qmul/base:v1.0
 FROM qmul/centos6_base:v1.0
 MAINTAINER Kevin Austin <k.austin@qmul.ac.uk>
@@ -33,4 +32,3 @@ RUN chmod -v +x /run-httpd.sh
 
 #~# Run Apache service in the foreground
 CMD ["/run-httpd.sh"]
-

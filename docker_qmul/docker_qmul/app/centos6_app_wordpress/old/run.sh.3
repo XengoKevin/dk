@@ -1,0 +1,36 @@
+#!/bin/bash -e
+
+#~# QMUL Standard Docker container creation script
+#
+# 2016-01-04 I.Price@qmul.ac.uk : Converted to generic run script with parameter files
+
+#~# Include our standard Bash functions
+INC="/etc/docker_qmul/includes"
+source ${INC}/dock_func.fcn
+
+#~# Clear the docker run options
+RUN_OPTS=""
+
+#~# Read in parameters from NAMES file
+while IFS='' read -r LINE || [[ -n "$LINE" ]]; do
+    if [[ $( echo ${LINE} | egrep "imagename" ) ]]
+        then
+            INAME=$( echo ${LINE}|cut -d "\"" -f 2 )
+        else
+            RUN_OPTS="${RUN_OPTS} ${LINE}"
+    fi
+done < ./includes/NAMES
+
+#~# Read in parameters from config files
+read_params ENV
+read_params LABELS
+read_params RESOURCES
+
+#~# Check we have a VER from a LABELS file and set VER
+chk_get_ver
+
+#~# Create container
+echo -e "\nImage Name: ${INAME}:${VER}"
+echo -e "\nRUN_OPTS:${RUN_OPTS}\n"
+
+docker run -d -P ${RUN_OPTS} ${INAME}:${VER}

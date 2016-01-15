@@ -1,0 +1,26 @@
+#~# Script to auto increment the version number
+
+VER_FILE="LABELS"
+readarray LABELS_FILE < ${VER_FILE}
+
+unset count
+count=$( awk -F'=v' '{print$2}' ${VER_FILE} )
+
+printf "line 1: %s" "${LABELS_FILE[0]}"
+printf "line 2: %s" "${LABELS_FILE[1]}"
+
+rm -f ${VER_FILE}
+touch ${VER_FILE}
+
+
+#~# TODO remove blank line from outpout
+for LINE in "${LABELS_FILE[@]}"
+do
+    if [[ $( echo ${LINE} | egrep "label version" ) ]]; then
+        printf "%s%04d\n" "--label version=v" "$((10#$count+1))" >> ${VER_FILE}
+    else
+        echo -e "$LINE" >> ${VER_FILE}
+    fi
+done
+
+cat LABELS

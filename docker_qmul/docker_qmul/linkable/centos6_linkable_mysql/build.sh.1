@@ -1,0 +1,11 @@
+# QMUL CentOS 6 MySQL Linkable Container Image
+# 2015-11-20 Kevin Austin <k.austin@qmul.ac.uk> : 00 Original file
+
+VER="v1.0"
+
+# Copy files from the Docker includes directory required for the build
+cp ../includes/centos6_mysql_setup.sh ./
+
+# Building & Running
+echo -e "\n\n***Building centos6_linkable_mysql container image - version $VER***\n\n"
+docker build --rm -t qmul/centos6_linkable_mysql:${VER} .

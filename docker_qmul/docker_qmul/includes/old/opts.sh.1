@@ -1,0 +1,75 @@
+#!/bin/sh
+
+# Highlighting
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+# Reset all variables that might be set
+CNAME=
+verbose=0 # Variables to be evaluated as shell arithmetic should be initialized to a default or validated beforehand.
+
+function usage_fcn ()
+{
+  echo -e "\n\tUsage:\n\t\t${0} [-c|--cname] [-h|--hostname]\n"
+  echo -e "\n\t\tThis script creates a container using pararmeter files\n"
+  echo -e "\n\t\t[-c|--cname]  Container name - Required"
+  echo -e "\n\t\t[-h|--hname]  Host name - Required"
+  echo -e "\n\t\t[-i|--iname]  Image name - Required"
+  echo -e "\n\t\t[-s|--stop]   Stop container"
+  echo -e "\n\t\t[-r|--remove] Remove container (infers -s )"
+  echo -e "\n\t\t[-l|--latest] Use 'latest' Image rather than VERSION file\n"
+}
+
+while :; do
+    case $1 in
+        -\?|--help)   # Call a "Usage" function to display a synopsis, then exit.
+            usage_fcn
+            exit
+            ;;
+        -c|--cname)       # Takes an option argument, ensuring it has been specified.
+            if [ -n "$2" ]; then
+                CNAME=$2
+                shift 2
+                continue
+            else
+                printf 'ERROR: "--cname" requires a non-empty option argument.\n' >&2
+                exit 1
+            fi
+            ;;
+        --cname=?*)
+            CNAME=${1#*=} # Delete everything up to "=" and assign the remainder.
+            ;;
+        --cname=)         # Handle the case of an empty --file=
+            printf 'ERROR: "--cname" requires a non-empty option argument.\n' >&2
+            exit 1
+            ;;
+        -v|--verbose)
+            verbose=$((verbose + 1)) # Each -v argument adds 1 to verbosity.
+            ;;
+        --)              # End of all options.
+            shift
+            break
+            ;;
+        -?*)
+            printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+            ;;
+        *)               # Default case: If no more options then break out of the loop.
+            break
+    esac
+
+    shift
+done
+
+# --CNAME is a required option. Ensure the variable "CNAME" has been set and exit if not.
+if [ -z "${CNAME}" ]; then
+    echo -e "\n${bold}ERROR: option \"--cname CONTAINER_NAME\" not given.${normal}\n" >&2
+    usage_fcn
+    exit 1
+fi
+
+
+# Rest of the program here.
+# If there are input files (for example) that follow the options, they
+# will remain in the "$@" positional parameters.
+echo -e "\nCNAME: ${CNAME}\n"
+

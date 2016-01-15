@@ -1,0 +1,33 @@
+dbdata:
+  image: busybox 
+  volumes:
+    - /var/lib/mysql
+
+dbserver:
+  image: mysql:5.6
+  volumes_from:
+    - dbdata
+  environment:
+    - MYSQL_ROOT_PASSWORD=e14nsE14NS
+    - MYSQL_DATABASE=wpdemo
+    - MYSQL_USER=composedemo
+    - MYSQL_PASSWORD=E14NSe14ns
+
+wpdata:
+  image: busybox
+  volumes:
+    - /var/www/html
+
+wpdemo:
+  image: wordpress:latest
+  links:
+    - dbserver:mysql
+  volumes_from:
+    - wpdata
+  ports:
+    - "8080:80"
+  environment:
+    - WORDPRESS_DB_NAME=wpdemo
+    - WORDPRESS_DB_USER=composedemo
+    - WORDPRESS_DB_PASSWORD=E14NSe14ns
+

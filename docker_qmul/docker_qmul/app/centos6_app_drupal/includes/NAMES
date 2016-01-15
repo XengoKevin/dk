@@ -1,0 +1,3 @@
+--imagename="qmul/centos6_app_drupal"
+--name="chk_c6_app_wp"
+--hostname="chk_c6_app_wp"

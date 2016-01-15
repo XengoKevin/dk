@@ -1,0 +1,112 @@
+#!/usr/bin/bash
+# MOTD script original? / mod mewbies.com v.03 2013 Sep 01
+
+# * Variables
+set var(user) $env(USER)
+set var(path) $env(PWD)
+set var(home) $env(HOME)
+
+# * Check if we're somewhere in /home
+#if {![string match -nocase "/home*" $var(path)]} {
+if {![string match -nocase "/home*" $var(path)] && ![string match -nocase "/usr/home*" $var(path)] } {
+  return 0
+}
+
+# * Calculate last login
+set lastlog [exec -- lastlog -u $var(user)]
+set ll(1)  [lindex $lastlog 7]
+set ll(2)  [lindex $lastlog 8]
+set ll(3)  [lindex $lastlog 9]
+set ll(4)  [lindex $lastlog 10]
+set ll(5)  [lindex $lastlog 6]
+
+# * Calculate current system uptime
+set uptime    [exec -- /usr/bin/cut -d. -f1 /proc/uptime]
+set up(days)  [expr {$uptime/60/60/24}]
+set up(hours) [expr {$uptime/60/60%24}]
+set up(mins)  [expr {$uptime/60%60}]
+set up(secs)  [expr {$uptime%60}]
+
+# * Calculate usage of home directory
+set usage [lindex [exec -- /usr/bin/du -ms $var(home)] 0]
+
+# * Calculate SSH logins:
+set logins     [exec -- w -s]
+set log(c)  [lindex $logins 5]
+
+# * Calculate processes
+set psa [expr {[lindex [exec -- ps -A h | wc -l] 0]-000}]
+set psu [expr {[lindex [exec -- ps U $var(user) h | wc -l] 0]-002}]
+set verb are
+if [expr $psu < 2] {
+	if [expr $psu = 0] {
+		set psu none
+	} else {
+		set verb is
+		}
+}
+
+# * Calculate current system load
+set loadavg     [exec -- /bin/cat /proc/loadavg]
+set sysload(1)  [lindex $loadavg 0]
+set sysload(5)  [lindex $loadavg 1]
+set sysload(15) [lindex $loadavg 2]
+
+# * Calculate Memory
+set memory  [exec -- free -m]
+set mem(t)  [lindex $memory 7]
+set mem(u)  [lindex $memory 8]
+set mem(f)  [lindex $memory 9]
+set mem(c)  [lindex $memory 16]
+set mem(s)  [lindex $memory 19]
+
+# * Calculate disk temperature from hddtemp
+set hddtemp [lindex [exec -- /usr/bin/hddtemp /dev/sda -uf | cut -c "31-35"] 0]
+
+# * Calculate temperature from lm-sensors
+set temperature    [exec -- sensors -f | grep °F | tr -d '+']
+set tem(0)  [lindex $temperature 2]
+set tem(m)  [lindex $temperature 4]
+set tem(c)  [lindex $temperature 15]
+
+# * ASCII head
+set head {
+
+________/\\\_______        __/\\\\____________/\\\\_        __/\\\________/\\\_        __/\\\_____________
+ _____/\\\\/\\\\____        _\/\\\\\\________/\\\\\\_        _\/\\\_______\/\\\_        _\/\\\_____________
+  ___/\\\//\////\\\__        _\/\\\//\\\____/\\\//\\\_        _\/\\\_______\/\\\_        _\/\\\_____________
+   __/\\\______\//\\\_        _\/\\\\///\\\/\\\/_\/\\\_        _\/\\\_______\/\\\_        _\/\\\_____________
+    _\//\\\______/\\\__        _\/\\\__\///\\\/___\/\\\_        _\/\\\_______\/\\\_        _\/\\\_____________
+     __\///\\\\/\\\\/___        _\/\\\____\///_____\/\\\_        _\/\\\_______\/\\\_        _\/\\\_____________
+      ____\////\\\//_____        _\/\\\_____________\/\\\_        _\//\\\______/\\\__        _\/\\\_____________
+       _______\///\\\\\\__        _\/\\\_____________\/\\\_        __\///\\\\\\\\\/___        _\/\\\\\\\\\\\\\\\_
+        _________\//////___        _\///______________\///__        ____\/////////_____        _\///////////////__
+
+}
+
+# * Print Output
+puts "\033\[01;32m$head\033\[0m"
+puts "  Last Login....: $ll(1) $ll(2) $ll(3) $ll(4) from $ll(5)"
+puts "  Uptime........: $up(days)days $up(hours)hours $up(mins)minutes $up(secs)seconds"
+puts "  Load..........: $sysload(1) (1minute) $sysload(5) (5minutes) $sysload(15) (15minutes)"
+puts "  Memory MB.....: $mem(t)  Used: $mem(u)  Free: $mem(f)  Free Cached: $mem(c)  Swap In Use: $mem(s)"
+puts "  Temperature...: Core0: $tem(0)  M/B: $tem(m)  CPU: $tem(c)  Disk: ${hddtemp}"
+puts "  Disk Usage....: You're using ${usage}MB in $var(home)"
+puts "  SSH Logins....: There are currently $log(c) users logged in."
+puts "  Processes.....: $psa total running of which $psu $verb yours"
+puts "  Weather.......: $wthr(t) $wthr(d) $wthr(e)\n"
+puts "\033\[01;32m  ::::::::::::::::::::::::::::::::::-RULES-::::::::::::::::::::::::::::::::::"
+puts "    This is a private system that you are not to give out access to anyone"
+puts "    without permission from the admin. No illegal files or activity. Stay,"
+puts "    in your home directory, keep the system clean, and make regular backups."
+puts "     -==  DISABLE YOUR PROGRAMS FROM KEEPING SENSITIVE LOGS OR HISTORY ==-\033\[0m\n"
+
+if {[file exists /etc/changelog]&&[file readable /etc/changelog]} {
+  puts " . .. More or less important system informations:\n"
+  set fp [open /etc/changelog]
+  while {-1!=[gets $fp line]} {
+    puts "  ..) $line"
+  }
+  close $fp
+  puts ""
+}

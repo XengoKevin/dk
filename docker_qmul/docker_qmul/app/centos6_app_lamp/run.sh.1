@@ -1,0 +1,40 @@
+#!/bin/bash -e 
+
+#~# QMUL CentOS 6 Custom Application LAMP container
+#
+# 2015-11-20 martin: v1.0 Created
+
+VER="v1.0"
+CNAME="centos6_app_lamp"
+INAME="qmul/${CNAME}"
+
+#~# TODO Hardcoded ports to 3307 2200 8000
+R_PORT__MYSQL=3307
+R_PORT_SSH=2200
+R_PORT_HTTP=8000
+
+#~# Stop old container
+if [[ $(docker ps -f name="${CNAME}" --format "{{.ID}}") ]] ; 
+    then 
+        echo -e "\n*** Stopping old ${CNAME} ***\n"
+        docker stop $(docker ps -f name="${CNAME}" --format "{{.ID}}") ; 
+    else 
+        echo "No container to stop" ; 
+fi
+
+#~# Remove old container 
+#~# TODO : Need to ask user if they really mean this
+if [[ $(docker ps -a -f name="${CNAME}" --format "{{.ID}}") ]] ; 
+    then 
+        echo -e "\n*** Removing old ${CNAME} ***\n"
+        docker rm $(docker ps -a -f name="${CNAME}" --format "{{.ID}}") ; 
+    else 
+        echo "No container to remove" ; 
+fi
+
+#~# Create container from qmul/centos6_app_lamp image with name centos6_app_lamp
+#~# Restart always - upgrade to Docker 1.9.0 required for unless-stopped
+
+#docker run -d -p $R_PORT_HTTP:80 -p $R_PORT_SSH:22 -p $R_PORT_MYSQL:3306 --name=${CNAME} --restart always ${INAME}:${VER}
+#~# Run with -P auto-allocate ports due to clashes
+docker run -d -P --name=${CNAME} --restart always ${INAME}:${VER}

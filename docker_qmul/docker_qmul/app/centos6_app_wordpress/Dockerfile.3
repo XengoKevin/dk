@@ -1,0 +1,24 @@
+#~# Dockerfile to create a WordPress container image with http & MySQL
+#
+# 2015-11-20: Ian T Price <I.Price@qmul.ac.uk>: Created v1.0
+
+#~# Based on Centos 6 lamp image qmul/centos6_lamp:latest
+FROM qmul/centos6_lamp:latest
+MAINTAINER Ian T Price <I.Price@qmul.ac.uk>
+MAINTAINER Kevin Austin <k.austin@qmul.ac.uk>
+LABEL description="This is a WordPress container based upon the QMUL CentOS6 LAMP image."
+
+#~# Install WordPress
+RUN yum install -y wordpress; yum clean all
+
+#~# Setup Wordpress Application
+ADD wordpress.conf /etc/httpd/conf.d/wordpress.conf
+
+#~# Setup MySQL
+RUN (service mysqld start && service mysqld stop)
+
+#~# Install & Use the supervisord to manage services
+RUN yum install -y python-setuptools
+RUN easy_install supervisor
+ADD supervisord.conf /etc/supervisord.conf
+CMD ["/usr/bin/supervisord"]

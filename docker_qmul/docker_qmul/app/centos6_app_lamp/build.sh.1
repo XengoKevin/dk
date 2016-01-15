@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+#~# QMUL CentOS 6 Custom Application LAMP container image
+#
+# Log:
+# 2015-11-20 martin: v1.0 Created
+
+VER="latest"
+INAME="qmul/centos6_app_lamp"
+
+#~# Building with image name qmul/centos6_app_lamp
+echo -e "\n\n*** Building ${INAME} container image - version ${VER} ***\n\n"
+docker build --rm $1 -t ${INAME}:${VER} .

@@ -1,0 +1,19 @@
+#~# Dockerfile to create a Custom Application LAMP image
+#
+# Log 20151120: martin: Created v1.0
+#
+
+#~# Based on Centos 6 lamp image qmul/centos6_lamp:v1.0
+FROM qmul/centos6_lamp:v1.0
+MAINTAINER MDT Evans <m.d.t.evans@qmul.ac.uk>
+LABEL description="This is an empty LAMP application monolithic container."
+
+#~# Expose ports 22 80 3306 to the docker engine
+EXPOSE 22 80 3306
+
+#~# Install & Use the supervisord to manage services
+RUN yum install -y python-setuptools
+RUN easy_install supervisor
+ADD supervisord.conf /etc/supervisord.conf
+CMD ["/usr/bin/supervisord"]
+

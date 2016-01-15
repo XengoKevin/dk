@@ -1,0 +1,79 @@
+#~# Dockerfile to create a Centos 6 Base image
+
+# 2015-11-17: Ian T Price <I.Price@qmul.ac.uk>: Created v1.0
+# 2015-11-18 ITP: Removed SSH keys
+# 2015-11-18 ITP: Added default packages and directories
+# 2015-11-20 ITP: Added acl
+# 2015-11-20 martin: Added sudo, telnet, bind-utils and ltrace
+# 2016-01-07 kevina: ssmtp added to base image
+
+#~# Based on Centos 6 centos:centos6 offical image from dockerhub.io
+#~# maintained by the CentOS Project <cloud-ops@centos.org>
+FROM centos:centos6
+MAINTAINER Ian T Price <I.Price@qmul.ac.uk>
+MAINTAINER Kevin Austin <k.austin@qmul.ac.uk>
+
+#~# Run yum update & install all base packages:
+RUN rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+RUN yum -y update; yum clean all
+RUN yum -y install \
+  epel-release     \
+  acl              \
+  bind-utils       \
+  dig              \
+  file             \
+  lsof             \
+  man              \
+  nano             \
+  openssh-server   \
+  passwd           \
+  ltrace           \
+  strace           \
+  sudo             \
+  tar              \
+  telnet           \
+  tree             \
+  unzip            \
+  vim              \
+  wget             \
+  which            \
+  puppet           \
+  zip
+
+#~# Configure ssmtp
+RUN yum -y install ssmtp  # For some reason this doesn't work in the yum statement above...?
+RUN sed -i 's/^mailhub=mail$/mailhub=smtp.qmul.ac.uk/' /etc/ssmtp/ssmtp.conf
+RUN sed -i 's/^#FromLineOverride=YES$/FromLineOverride=YES/' /etc/ssmtp/ssmtp.conf
+
+#~# Set up the install group (This should be done by Puppet but isn't).
+RUN groupadd -fg 1000 install
+
+#~# Set-up QMUL default directories:
+#  These should all be owned by root and install group rwx
+#  Left at root:install for now - puppet can sort as required
+
+#~# For local source builds
+RUN mkdir -p /usr/local/src
+RUN chmod 775 /usr/local/src
+RUN chown root:install /usr/local/src
+
+#~# For 3rd party non-repoed RPMS
+RUN mkdir -p /usr/local/RPMS
+RUN chmod 775 /usr/local/RPMS
+RUN chown root:install /usr/local/RPMS
+
+#~# For tarballs
+RUN mkdir -p /usr/local/distrib
+RUN chmod 775 /usr/local/distrib
+RUN chown root:install /usr/local/distrib
+
+# This creates the ssh directories & set-up files
+RUN (service sshd start && service sshd stop)
+
+# Tweak the SSH config (puppet fixes this later on)
+RUN sed -i 's/^#PermitRootLogin\syes$/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/^PasswordAuthentication\syes$/PasswordAuthentication no/' /etc/ssh/sshd_config
+RUN sed -i 's/^#UseDNS yes$/UseDNS no/' /etc/ssh/sshd_config
+
+#~# Run yum clean all
+RUN yum clean all

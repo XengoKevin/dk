@@ -1,0 +1,56 @@
+#~# QMUL CentOS 6 compose file to create Wordpress App + http + MySQL + data vols image 
+#~# TODO: Convert images to QMUL standard images
+
+#~# Container for HTTPD from qmul/centos6_apache image
+wpcmphttp:
+  image: qmul/centos6_linkable_apache
+  links:
+    - wpcmpdb:mysql
+  volumes_from:
+    - wpcmpdata
+  ports:
+    - "8888:80"
+  environment:
+    - WORDPRESS_DB_NAME=wpcmp
+    - WORDPRESS_DB_USER=wpcmpuser
+    - WORDPRESS_DB_PASSWORD=E14NSe14ns
+
+
+#~# Container for MySQL data from busybox image
+wpcmpdbdata:
+  image: busybox 
+  volumes:
+    - /var/lib/mysql
+
+#~# Container for Mysql server from mysql:5.6 image
+wpcmpdb:
+  image: mysql:5.6
+  volumes_from:
+    - wpcmpdbdata
+  environment:
+    - MYSQL_ROOT_PASSWORD=e14nsE14NS
+    - MYSQL_DATABASE=wpcmp
+    - MYSQL_USER=wpcmpuser
+    - MYSQL_PASSWORD=E14NSe14ns
+
+#~# Container for WordPress data from busybox image
+wpcmpdata:
+  image: busybox
+  volumes:
+    - /var/www/html
+
+#~# Container for WordPress server from wordpress:latest image
+wpcmp:
+  image: wordpress:latest
+  links:
+    - wpcmpdb:mysql
+  volumes_from:
+    - wpcmpdata
+  ports:
+    - "8080:80"
+  environment:
+    - WORDPRESS_DB_NAME=wpcmp
+    - WORDPRESS_DB_USER=wpcmpuser
+    - WORDPRESS_DB_PASSWORD=E14NSe14ns
+
+

@@ -1,0 +1,39 @@
+# QMUL centos6_app_wordpress
+
+# File to produce image with fully configured wordpress
+# using supervisor
+# This will be the latest version - V4.3.x
+
+# 2015-11-20 Ian T Price <I.Price@qmul.ac.uk>
+
+
+FROM qmul/centos6_mysql:
+
+MAINTAINER Ian T Price <I.Price@qmul.ac.uk>
+
+# Install wordpress                                                                                                                   
+RUN yum install -y \
+  wordpress        \
+  ; yum clean all
+
+## Setup the Apache httpd
+
+# Add check files
+ADD phpinfo.php /var/www/html/phpinfo.php
+RUN yum -y install httpd; yum clean all
+RUN echo "Apache HTTPD by Docker" >> /var/www/html/index.html
+
+#RUN mkdir -p /etc/httpd/conf.d
+ADD mod_extract_forwarded.conf /etc/httpd/conf.d/mod_extract_forwarded.conf
+
+# This may or may not cause issues - needs checking
+#RUN sed -i 's/^UseCanonicalName Off$/UseCanonicalName On/' /etc/httpd/conf/httpd.conf
+
+EXPOSE 80
+
+# Simple startup script to avoid some issues observed with container restart 
+ADD run-httpd.sh /run-httpd.sh
+RUN chmod -v +x /run-httpd.sh
+
+# CMD ["/run-httpd.sh"]
+CMD ["/usr/sbin/apachectl", "-D", "FOREGROUND"]

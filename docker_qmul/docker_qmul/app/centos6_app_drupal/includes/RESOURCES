@@ -1,0 +1,8 @@
+--memory=384M
+--memory-swap=512M
+--cpu-period=50000
+--cpu-quota=25000
+--blkio-weight=500
+--ulimit nproc=1024
+--ulimit core=0
+--ulimit nofile=1024

@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+#~# QMUL CentOS 6 Drupal Application container image
+#
+# Log:
+# 2015-11-20 kevina: v1.0 Created
+# 2015-11-25 kevina: v1.1 Updated: Changed Drush install to v6.x as 7.x is not compatible with PHP 5.3x
+
+VER="latest"
+INAME="qmul/centos6_app_drupal"
+INC="/etc/docker_qmul/includes"
+
+#~# Include centos6_app_drupal_setup.sh
+# Copy files from the Docker includes directory required for the build
+cp -f ${INC}/centos6_app_drupal_setup.sh ./
+
+# Building & Running
+echo -e "\n\n*** Building ${INAME} container image - version ${VER} ***\n\n"
+docker build -t ${INAME}:${VER} .
+

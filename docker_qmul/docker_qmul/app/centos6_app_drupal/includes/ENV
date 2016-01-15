@@ -1,0 +1,3 @@
+-e TERM=xterm
+--add-host="puppet:10.16.240.104"
+--restart unless-stopped
